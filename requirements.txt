@@ -1,0 +1,10 @@
+pyatv>=0.16
+PyAudioWPatch>=0.2.12
+srptools<2
+customtkinter
+pystray
+pillow
+numpy
+soxr
+pycaw
+pyinstaller
