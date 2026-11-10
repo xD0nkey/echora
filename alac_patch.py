@@ -5,7 +5,7 @@ but silently drop the audio. Apple senders use ALAC (ct=2). We wrap each
 PCM packet in an *uncompressed* ALAC frame (escape mode), which every ALAC
 decoder accepts and costs almost no CPU.
 """
-from pyatv.protocols.raop.protocols import airplayv2
+from pyatv.protocols.raop.protocols import airplayv2, StreamContext
 from pyatv.support.http import decode_bplist_from_body
 from pyatv.support.chacha20 import Chacha20Cipher8byteNonce
 from pyatv import exceptions
@@ -79,6 +79,17 @@ async def _send_audio_packet(self, transport, rtp_header, audio):
     return await _orig_send(self, transport, rtp_header, alac_uncompressed(audio))
 
 
+_orig_reset = StreamContext.reset
+
+
+def _reset(self) -> None:
+    # pyatv's reset() (called when the stream starts) hardcodes latency to
+    # 1.5 s, which silently overrode our setting. Re-apply ours.
+    _orig_reset(self)
+    self.latency = LATENCY_FRAMES
+
+
 def apply():
+    StreamContext.reset = _reset
     airplayv2.AirPlayV2.setup_audio_stream = _setup_audio_stream
     airplayv2.AirPlayV2.send_audio_packet = _send_audio_packet
